@@ -173,3 +173,43 @@ export const checkForSetup = async() => {
     return redirect("sign-in")
   }
 }
+
+// Financial utilities
+
+export const editFinancialData = async(table: string, amount: number) => {
+  const supabase = await createClient();
+  const userID = await getuserID();
+
+  if(userID != null) {
+    const {error} = await supabase.from(table).insert({user_id: userID, amount: amount})
+  }
+
+  updateProfileFinancials()
+}
+
+export const updateProfileFinancials = async() => {
+  const supabase = await createClient();
+  const userID = await getuserID();
+
+  let totalIncome = 0
+  let totalExpenses = 0
+
+  const income = await supabase.from("income").select()
+  const expense = await supabase.from("expense").select()
+
+  if(income.data != null) {
+    for(let i = 0; i < income.data.length; i++){
+      totalIncome += income.data[i].amount
+    }
+  }
+
+  if(expense.data != null) {
+    for(let i = 0; i < expense.data.length; i++){
+      totalExpenses += expense.data[i].amount
+    }
+  }
+
+  const balance = totalIncome - totalExpenses
+
+  const {error} = await supabase.from("profiles").update({balance: balance}).eq("id", userID);
+}
